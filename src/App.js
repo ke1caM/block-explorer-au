@@ -1,36 +1,63 @@
-import { Alchemy, Network } from 'alchemy-sdk';
-import { useEffect, useState } from 'react';
+import { Alchemy, Network } from "alchemy-sdk";
+import { useEffect, useState } from "react";
+import { Header, Main, Footer } from "./components";
+import "./App.css";
 
-import './App.css';
-
-// Refer to the README doc for more information about using API
-// keys in client-side code. You should never do this in production
-// level code.
 const settings = {
   apiKey: process.env.REACT_APP_ALCHEMY_API_KEY,
   network: Network.ETH_MAINNET,
 };
 
-
-// In this week's lessons we used ethers.js. Here we are using the
-// Alchemy SDK is an umbrella library with several different packages.
-//
-// You can read more about the packages here:
-//   https://docs.alchemy.com/reference/alchemy-sdk-api-surface-overview#api-surface
 const alchemy = new Alchemy(settings);
 
 function App() {
-  const [blockNumber, setBlockNumber] = useState();
+  const [address, setAddress] = useState("");
+  const [blockNumber, setBlockNumber] = useState(0);
+  const [addressValue, setAddressValue] = useState(0);
+  const [addressBalance, setAddressBalance] = useState(0);
+  const [blockDetails, setBlockDetails] = useState();
+  const [gasPrice, setGasPrice] = useState();
 
   useEffect(() => {
-    async function getBlockNumber() {
-      setBlockNumber(await alchemy.core.getBlockNumber());
+    async function getAllValues() {
+      const blockNumber = await alchemy.core.getBlockNumber();
+      setBlockNumber(blockNumber);
+
+      const gasPrice = await alchemy.core.getGasPrice();
+      setGasPrice(Math.round(parseInt(gasPrice._hex) / 10 ** 9));
+
+      if (addressValue.length === 42) {
+        setAddressBalance(await alchemy.core.getBalance(addressValue, "safe"));
+      } else {
+        setBlockDetails(
+          await alchemy.core.getBlockWithTransactions(parseInt(addressValue))
+        );
+      }
     }
+    getAllValues();
+  }, [addressValue]);
 
-    getBlockNumber();
-  });
-
-  return <div className="App">Block Number: {blockNumber}</div>;
+  return (
+    <div>
+      <div className="gradient__bg">
+        <Header
+          address={address}
+          setAddress={setAddress}
+          setAddressValue={setAddressValue}
+          blockNumber={blockNumber}
+        />
+      </div>
+      <Main
+        blockNumber={blockNumber}
+        addressValue={addressValue}
+        addressBalance={addressBalance}
+        blockDetails={blockDetails}
+        setAddressValue={setAddressValue}
+        gasPrice={gasPrice}
+      />
+      <Footer />
+    </div>
+  );
 }
 
 export default App;
